@@ -1,7 +1,12 @@
-run = "node index.js"
+run = "cd packages/test2-react; yarn; yarn dev"
 modules = ["nodejs-20"]
 [nix]
 channel = "stable-23_11"
 
 [deployment]
 run = ["sh", "-c", "node index.js"]
+
+[[ports]]
+localPort = 5173
+externalPort = 3000
+exposeLocalhost = true
