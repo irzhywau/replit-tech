@@ -1,16 +1,19 @@
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import api from "./api";
+import { addHours } from "./utils";
 
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
+  deadline: Date;
+  start?: boolean;
+  timeLeft?: string;
 }
 
 const todoList: React.FC = () => {
   const [todos, setTodos] = useState<Todo[]>();
   const [newTodo, setNewTodo] = useState<string>("");
-  const [filter, setFilter] = useState<string>();
 
   useEffect(async () => {
     const savedTodos = await api.get("/todos");
@@ -18,10 +21,8 @@ const todoList: React.FC = () => {
   }, []);
 
   const handleAddTodo = () => {
-    if (newTodo.trim() === "") return;
-    const updatedTodos = [...todos, { text: newTodo }];
+    const updatedTodos = todos.push({ text: newTodo, deadline: addHours(new Date(), 6) });
     setTodos(updatedTodos);
-    setNewTodo("");
   };
 
   const handleRemoveTodo = useCallback((id: number) => {
@@ -29,23 +30,41 @@ const todoList: React.FC = () => {
     setTodos(updatedTodos);
   }, []);
 
-  const handleToggleTodo = (id: number) => {
+  const countDownTimer = () => {
+    const startedTodos = todos.map((todo) => {
+      if (!todo.start) {
+        return;
+      }
+      const difference = todo.deadline.getTime() - new Date().getTime();
+      let timeLeft = { hours: 0, minutes: 0, seconds: 0 };
+
+      if (difference > 0) {
+        timeLeft = {
+          hours: Math.floor(difference / (1000 * 60 * 60)),
+          minutes: Math.floor((difference % (1000 * 60 * 60)) / (1000 * 60)),
+          seconds: Math.floor((difference % (1000 * 60)) / 1000)
+        };
+      } else {
+        todo.completed = true;
+      }
+
+      todo.timeLeft = timeLeft
+    });
+    setTodos(startedTodos)
+  };
+
+  const start = (id: number) => {
     const updatedTodos = todos.map((todo) =>
-      todo.id === id ? { ...todo, completed: !todo.completed } : todo,
+      todo.id === id ? { ...todo, start: true } : todo,
     );
     setTodos(updatedTodos);
   };
 
-  const filteredTodos = useMemo(() => {
-    switch (filter) {
-      case "completed":
-        return todos.filter((todo) => todo.completed);
-      case "active":
-        return todos.filter((todo) => !todo.completed);
-      default:
-        return todos;
-    }
-  }, [filter, todos]);
+  useEffect(() => {
+    setTimeout(() => {
+      countDownTimer();
+    }, 1000);
+  }, []);
 
   const completedCount = todos.reduce((count, todo) =>
     todo.completed ? count + 1 : count,
@@ -60,24 +79,20 @@ const todoList: React.FC = () => {
         onChange={(e) => setNewTodo(e.target.value)}
       />
       <button onClick={handleAddTodo()}>Add Todo</button>
-      <select value={filter} onChange={(e) => setFilter(e.target.value)}>
-        <option value="all">All</option>
-        <option value="active">Active</option>
-        <option value="completed">Completed</option>
-      </select>
       <ul>
-        {filteredTodos.map(todo, (index) => (
+        {todos.map({ ...todo, timeLeft }, (index) => (
           <li>
             <span
               key={index}
               style={{
                 "text-decoration": todo.completed ? "line-through" : "none",
               }}
-              onClick={() => handleToggleTodo(todo.id)}
             >
               {todo.text}
             </span>
-            <button onClick={() => handleRemoveTodo(todo.id)}>Remove</button>
+            <button onClick={start(todo.id)}>Start</button>
+            <button onClick={handleRemoveTodo(todo.id)}>Remove</button>
+            <div>{timeLeft}</div>
           </li>
         ))}
       </ul>

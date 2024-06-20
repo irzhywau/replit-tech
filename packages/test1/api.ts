@@ -1,13 +1,18 @@
+import { addHours } from "./utils";
+
 interface Todo {
   id: number;
   text: string;
   completed: boolean;
+  deadline: Date;
+  start?: boolean;
+  timeLeft?: string;
 }
 
 const fakeTodos: Todo[] = [
-  { id: 1, text: 'Learn React', completed: false },
-  { id: 2, text: 'Learn TypeScript', completed: true },
-  { id: 3, text: 'Build a Todo App', completed: false },
+  { id: 1, text: 'Learn React', completed: false, deadline: addHours(new Date(), 6) },
+  { id: 2, text: 'Learn TypeScript', completed: false, deadline: addHours(new Date(), 6) },
+  { id: 3, text: 'Build a Todo App', completed: false, deadline: addHours(new Date(), 6) },
 ];
 
 const api = {
